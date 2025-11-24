@@ -1,28 +1,3 @@
-<!--
-MD S Boolean Search - Single-file GitHub Pages app
-
-Save this file as `index.html` in a repository and enable GitHub Pages (branch: main / folder: root).
-
-Features:
-- Option A token input (user pastes token each session)
-- Simple Boolean parser supporting: AND, OR, NOT, parentheses, quoted phrases, and fielded terms (field:value or field:"phrase")
-- Translates parsed AST to a basic MDS search POST body
-- Lets you preview the generated request body and response
-- Simple, responsive UI
-
-Notes / customization:
-- Default API endpoint set to: https://mds-data.ciim.k-int.com/api/v2/search
-  If your instance uses a different path, change API_ENDPOINT variable below.
-- Field mapping: by default, a fielded search like collection:"Wiltshire Museum"
-  will be translated to a match_phrase on the provided field name. You can adjust
-  `FIELD_MAP` to translate friendly names (like `museum`) to API names (like `collection.exact`).
-
-Security note:
-- This app stores NO token. You must paste your token into the "API token" box each time.
-- Deploying to GitHub Pages is public — do NOT embed secrets into the repo.
-
---> 
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -180,7 +155,6 @@ function parseFieldMap(text){
 }
 
 // --- Simple Boolean Parser ---
-// Tokenizer supports: words, quoted phrases, field:value, parentheses, AND, OR, NOT
 function tokenize(input){
   const tokens = [];
   const re = /\s*(\(|\)|\"(?:[^\\\"]|\\.)*\"|AND\b|OR\b|NOT\b|[^\s()]+)\s*/gi;
@@ -195,8 +169,7 @@ function tokenize(input){
     if(/^AND$/i.test(t)) return {type:'AND'};
     if(/^OR$/i.test(t)) return {type:'OR'};
     if(/^NOT$/i.test(t)) return {type:'NOT'};
-    if(/^\"/.test(t)) return {type:'PHRASE', value: t.slice(1,-1)}; // naive unquote
-    // fielded? check for ':'
+    if(/^\"/.test(t)) return {type:'PHRASE', value: t.slice(1,-1)};
     const idx = t.indexOf(':');
     if(idx>0){
       const field = t.slice(0,idx);
@@ -222,7 +195,6 @@ function parseExpression(tokens){
     if(t.type==='FIELD'){ consume(); return {op:'TERM', field: t.field, value: t.value}; }
     if(t.type==='PHRASE'){ consume(); return {op:'TERM', value: t.value}; }
     if(t.type==='WORD'){ consume(); return {op:'TERM', value: t.value}; }
-    // default
     return null;
   }
 
@@ -251,20 +223,17 @@ function parseExpression(tokens){
 
 // Convert AST to MDS-style Elasticsearch-ish query
 function astToQuery(ast, fieldMap){
-  // We'll build a bool query with must/should/must_not arrays
   function nodeToClause(node){
     if(!node) return null;
     if(node.op==='TERM'){
       if(node.field){
         const fld = fieldMap[node.field] || node.field;
-        // If value looks like a number or single word, use term; otherwise match_phrase
         if(/^[^\s]+$/.test(node.value)){
           return { term: { [fld]: node.value } };
         } else {
           return { match_phrase: { [fld]: node.value } };
         }
       } else {
-        // full-text across all fields using query_string
         return { query_string: { query: node.value } };
       }
     }
@@ -280,7 +249,6 @@ function astToQuery(ast, fieldMap){
     return null;
   }
 
-  // Flatten combs into bool
   function flatten(node, out){
     if(!node) return;
     if(node.comb){
@@ -288,7 +256,6 @@ function astToQuery(ast, fieldMap){
         flatten(node.left, out);
         flatten(node.right, out);
       } else if(node.comb==='OR'){
-        // OR -> put both into should
         out.should = out.should || [];
         out.should.push(node.left);
         out.should.push(node.right);
@@ -300,7 +267,6 @@ function astToQuery(ast, fieldMap){
       out.must_not.push(node.not);
       return;
     }
-    // leaf
     out.must = out.must || [];
     out.must.push(node);
   }
@@ -309,19 +275,10 @@ function astToQuery(ast, fieldMap){
   const holder = {};
   flatten(rootClause, holder);
 
-  // Convert holder's raw items into ES-style queries
   const bool = {};
-  if(holder.must){
-    bool.must = holder.must.map(convertSimple);
-  }
-  if(holder.should){
-    // holder.should may contain comb nodes; convert each
-    bool.should = holder.should.map(convertSimple);
-    bool.minimum_should_match = 1;
-  }
-  if(holder.must_not){
-    bool.must_not = holder.must_not.map(convertSimple);
-  }
+  if(holder.must){ bool.must = holder.must.map(convertSimple); }
+  if(holder.should){ bool.should = holder.should.map(convertSimple); bool.minimum_should_match = 1; }
+  if(holder.must_not){ bool.must_not = holder.must_not.map(convertSimple); }
 
   return { bool };
 
@@ -330,7 +287,6 @@ function astToQuery(ast, fieldMap){
     if(item.term) return { term: item.term };
     if(item.match_phrase) return { match_phrase: item.match_phrase };
     if(item.query_string) return { query_string: item.query_string };
-    // if combs slipped through
     if(item.comb) return { query_string: { query: serializeNode(item) } };
     if(item.not) return { query_string: { query: serializeNode(item.not) } };
     return { query_string: { query: serializeNode(item) } };
@@ -338,20 +294,10 @@ function astToQuery(ast, fieldMap){
 
   function serializeNode(n){
     if(!n) return '';
-    if(n.term){
-      const [k,v] = Object.entries(n.term)[0];
-      return `${k}:"+${v}+"`;
-    }
-    if(n.match_phrase){
-      const [k,v] = Object.entries(n.match_phrase)[0];
-      return `${k}:\"${v}\"`;
-    }
-    if(n.query_string){
-      return n.query_string.query;
-    }
-    if(n.left && n.right && n.comb){
-      return `(${serializeNode(n.left)} ${n.comb} ${serializeNode(n.right)})`;
-    }
+    if(n.term){ const [k,v] = Object.entries(n.term)[0]; return `${k}:"+${v}+"`; }
+    if(n.match_phrase){ const [k,v] = Object.entries(n.match_phrase)[0]; return `${k}:\"${v}\"`; }
+    if(n.query_string) return n.query_string.query;
+    if(n.left && n.right && n.comb) return `(${serializeNode(n.left)} ${n.comb} ${serializeNode(n.right)})`;
     return JSON.stringify(n);
   }
 }
@@ -359,13 +305,7 @@ function astToQuery(ast, fieldMap){
 // Build final POST body for MDS search
 function buildRequestBody(ast, fieldMap, pageSize){
   const q = astToQuery(ast, fieldMap);
-  // Basic structure; adapt as needed for your MDS instance
-  const body = {
-    query: q,
-    page: 1,
-    pageSize: pageSize || 25
-  };
-  return body;
+  return { query: q, page: 1, pageSize: pageSize || 25 };
 }
 
 // --- UI wiring ---
@@ -433,10 +373,7 @@ async function sendRequest(body){
   try{
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type':'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(body)
     });
     const data = await res.json();
@@ -452,11 +389,9 @@ async function sendRequest(body){
 
 function renderResults(data){
   resultsBox.innerHTML = '';
-  // Try a few common shapes: data.items | data.results | data.hits.hits
   const items = data.items || data.results || (data.hits && data.hits.hits) || [];
   if(items.length===0){ resultsBox.innerHTML = '<div class="muted">No results</div>'; return; }
   for(const it of items){
-    // Normalize an object for display
     const obj = it._source || it || {};
     const title = obj.title || obj.name || obj.displayTitle || (obj._id? ('ID: '+obj._id) : 'Untitled');
     const html = document.createElement('div');
@@ -468,10 +403,4 @@ function renderResults(data){
 
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// populate request body on load with an example
-requestArea.value = JSON.stringify({ query: { match_all: {} }, page:1, pageSize:25 }, null, 2);
-setStatus('Ready');
-
-</script>
-</body>
-</html>
+requestArea
