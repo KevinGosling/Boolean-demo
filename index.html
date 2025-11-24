@@ -185,7 +185,7 @@ async function previewQuery(){
   if(!token){ alert('Paste your API token first'); return; }
 
   const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
-  const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=0`;
+  const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=1`;
 
   requestArea.value = url;
   setStatus('Fetching count...');
