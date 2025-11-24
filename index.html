@@ -130,7 +130,47 @@ window.addEventListener('beforeunload', ()=>{
   tokenInput.value = '';
 });
 
-// ...rest of the existing JS remains unchanged (parsing, search, UI wiring)...
+// Function to send search request and show raw status code
+async function sendSearch(body) {
+  const resultsDiv = document.getElementById('results');
+  const responsePre = document.getElementById('responseJSON');
+  const statusDiv = document.getElementById('status');
+  try {
+    const resp = await fetch(endpointInput.value, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenInput.value}`
+      },
+      body: JSON.stringify(body)
+    });
+    const text = await resp.text();
+    let data;
+    try { data = JSON.parse(text); } catch(e){ data = text; }
+    statusDiv.textContent = `${resp.status} ${resp.statusText}`;
+    responsePre.textContent = JSON.stringify(data, null, 2);
+    resultsDiv.innerHTML = '';
+    if(resp.ok && typeof data === 'object'){ 
+      Object.entries(data).forEach(([k,v]) => {
+        const div = document.createElement('div');
+        div.className = 'result';
+        div.textContent = `${k}: ${JSON.stringify(v)}`;
+        resultsDiv.appendChild(div);
+      });
+    }
+  } catch(err){
+    statusDiv.textContent = 'Error';
+    responsePre.textContent = err;
+    resultsDiv.innerHTML = '';
+  }
+}
+
+// Wire up Run button
+document.getElementById('run').addEventListener('click', ()=>{
+  const query = document.getElementById('query').value;
+  const body = { query: query, size: parseInt(document.getElementById('pageSize').value || '25') };
+  sendSearch(body);
+});
 </script>
 </body>
 </html>
