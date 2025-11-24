@@ -345,18 +345,22 @@ function renderResults(data){
 
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// --- Clear sensitive inputs and response JSON on load/refresh ---
 window.addEventListener('load', () => {
   tokenInput.value = '';
   queryInput.value = '';
   resultsBox.innerHTML = '';
+  responseJSON.textContent = '{}';  // clear response JSON
 });
 
 window.addEventListener('beforeunload', () => {
   tokenInput.value = '';
   queryInput.value = '';
   resultsBox.innerHTML = '';
+  responseJSON.textContent = '{}';  // clear response JSON
 });
 
+// populate request area with empty GET URL
 requestArea.value = `${DEFAULT_ENDPOINT}?q=&page=1&pageSize=25`;
 setStatus('Ready');
 </script>
