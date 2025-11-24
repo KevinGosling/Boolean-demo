@@ -12,7 +12,6 @@
     header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
     h1{margin:0;font-size:20px}
     p.lead{margin:0;color:var(--muted);font-size:13px}
-
     .grid{display:grid;grid-template-columns:1fr 420px;gap:18px}
     .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.5)}
     label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
@@ -26,7 +25,6 @@
     pre{background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;overflow:auto}
     .muted{color:var(--muted);font-size:13px}
     footer{margin-top:18px;color:var(--muted);font-size:13px}
-
     @media (max-width:980px){.grid{grid-template-columns:1fr;}}
   </style>
 </head>
@@ -401,6 +399,4 @@ function renderResults(data){
   }
 }
 
-function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-requestArea
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace
