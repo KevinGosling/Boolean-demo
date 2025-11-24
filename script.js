@@ -1,32 +1,42 @@
-// --- Parser Logic ---
-const fieldMap = {
-  type: "coin type",
-  inscription: "inscription",
-  material: "material",
-  date: "date",
-};
+// --- Parser Logic (all terms generic) ---
 
+// Tokenizer
 function tokenize(query) {
   return query.match(/[\w:]+|AND|OR|NOT|\(|\)/gi) || [];
 }
 
+// Parser
 function parse(tokens) {
   let pos = 0;
+
   function parseExpression() {
     let nodes = [];
     while (pos < tokens.length) {
       let token = tokens[pos];
+
       if (token === ")") { pos++; break; }
       if (token === "(") { pos++; nodes.push(parseExpression()); }
-      else if (token.toUpperCase() === "AND" || token.toUpperCase() === "OR") { nodes.push(token.toUpperCase()); pos++; }
-      else if (token.toUpperCase() === "NOT") { pos++; nodes.push({ NOT: parseExpression() }); }
-      else { const [field, value] = token.split(":"); nodes.push({ field, value }); pos++; }
+      else if (token.toUpperCase() === "AND" || token.toUpperCase() === "OR") { 
+        nodes.push(token.toUpperCase()); 
+        pos++; 
+      }
+      else if (token.toUpperCase() === "NOT") { 
+        pos++; 
+        nodes.push({ NOT: parseExpression() }); 
+      }
+      else {
+        // Generic term
+        nodes.push({ value: token });
+        pos++;
+      }
     }
     return nodes.length === 1 ? nodes[0] : nodes;
   }
+
   return parseExpression();
 }
 
+// Convert AST to natural language
 function astToEnglish(ast) {
   if (Array.isArray(ast)) {
     let hasOperator = ast.some(node => node === "AND" || node === "OR");
@@ -41,12 +51,12 @@ function astToEnglish(ast) {
     return hasOperator ? "(" + result + ")" : result;
   } else if (ast.NOT) {
     return "excluding " + astToEnglish(ast.NOT);
-  } else if (ast.field && ast.value) {
-    const fieldName = fieldMap[ast.field] || ast.field;
-    return `${fieldName} "${ast.value}"`;
+  } else if (ast.value) {
+    return `"${ast.value}"`;
   } else return "";
 }
 
+// Main function
 function booleanToEnglish(query) {
   const tokens = tokenize(query);
   const ast = parse(tokens);
@@ -55,7 +65,7 @@ function booleanToEnglish(query) {
   return english;
 }
 
-// --- Live Update ---
+// Live update
 const inputEl = document.getElementById("booleanInput");
 const outputEl = document.getElementById("englishOutput");
 
