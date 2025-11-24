@@ -29,77 +29,77 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div style="flex:1">
-        <h1>MuseumData Service — Boolean Search UI (GitHub Pages)</h1>
-        <p class="lead">Paste your token each session. Enter Boolean queries and get results as JSON.</p>
-      </div>
-      <div style="text-align:right">
-        <div class="muted">Tip: Keep token private — don't commit it to repo</div>
-      </div>
-    </header>
+<div class="container">
+  <header>
+    <div style="flex:1">
+      <h1>MuseumData Service — Boolean Search UI (GitHub Pages)</h1>
+      <p class="lead">Paste your token each session. Enter Boolean queries and get results as JSON.</p>
+    </div>
+    <div style="text-align:right">
+      <div class="muted">Tip: Keep token private — don't commit it to repo</div>
+    </div>
+  </header>
 
-    <div class="grid">
-      <div>
-        <div class="card">
-          <label for="token">MDS API token (paste each session)</label>
-          <input id="token" type="text" placeholder="paste your token here">
+  <div class="grid">
+    <div>
+      <div class="card">
+        <label for="token">MDS API token (paste each session)</label>
+        <input id="token" type="text" placeholder="paste your token here">
 
-          <div style="height:10px"></div>
+        <div style="height:10px"></div>
 
-          <label for="endpoint">API endpoint</label>
-          <input id="endpoint" type="text" value="https://mds-data.ciim.k-int.com/api/v2/search" placeholder="GET endpoint for search">
+        <label for="endpoint">API endpoint</label>
+        <input id="endpoint" type="text" value="https://mds-data.ciim.k-int.com/api/v2/search" placeholder="GET endpoint for search">
 
-          <div style="height:10px"></div>
+        <div style="height:10px"></div>
 
-          <label for="query">Boolean query</label>
-          <textarea id="query" placeholder='Example: sceatta AND collection:"Wiltshire Museum"'></textarea>
+        <label for="query">Boolean query</label>
+        <textarea id="query" placeholder='Example: sceatta AND collection:"Wiltshire Museum"'></textarea>
 
-          <div style="height:10px"></div>
+        <div style="height:10px"></div>
 
-          <label>Field map (friendly→api field). Edit to match your dataset.</label>
-          <textarea id="fieldmap" rows="3">collection:collection
+        <label>Field map (friendly→api field). Edit to match your dataset.</label>
+        <textarea id="fieldmap" rows="3">collection:collection
 title:title
 description:description
-          </textarea>
+        </textarea>
 
-          <div style="height:10px"></div>
+        <div style="height:10px"></div>
 
-          <label>Page size</label>
-          <input id="pageSize" type="text" value="25">
+        <label>Page size</label>
+        <input id="pageSize" type="text" value="25">
 
-          <div style="height:10px"></div>
+        <div style="height:10px"></div>
 
-          <div class="row">
-            <button id="run">Run search</button>
-            <button id="clear" class="secondary">Clear results</button>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><strong>Results</strong></div>
-            <div class="muted">Preview / debug</div>
-          </div>
-
-          <div class="results" id="results"></div>
-
-          <div style="height:10px"></div>
-          <div>
-            <strong>Response JSON</strong>
-            <pre id="responseJSON">{}</pre>
-          </div>
+        <div class="row">
+          <button id="run">Run search</button>
+          <button id="clear" class="secondary">Clear results</button>
         </div>
       </div>
     </div>
 
-    <footer>
-      <div>To deploy: create a repo, add this file as <code>index.html</code>, enable GitHub Pages (main branch, root), then open the published URL.</div>
-    </footer>
+    <div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>Results</strong></div>
+          <div class="muted" id="status">Idle</div>
+        </div>
+
+        <div class="results" id="results"></div>
+
+        <div style="height:10px"></div>
+        <div>
+          <strong>Response JSON</strong>
+          <pre id="responseJSON">{}</pre>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <footer>
+    <div>To deploy: create a repo, add this file as <code>index.html</code>, enable GitHub Pages (main branch, root), then open the published URL.</div>
+  </footer>
+</div>
 
 <script>
 // --- Configuration ---
@@ -120,7 +120,7 @@ function parseFieldMap(text){
   return m;
 }
 
-// Simple Boolean parser (tokens -> AST -> query string)
+// Boolean parser
 function tokenize(input){
   const tokens = [];
   const re = /\s*(\(|\)|\"(?:[^\\\"]|\\.)*\"|AND\b|OR\b|NOT\b|[^\s()]+)\s*/gi;
@@ -225,8 +225,7 @@ function parseAndBuild(){
   try{
     const tokens = tokenize(raw);
     const ast = parseExpression(tokens);
-    const queryStr = astToQueryString(ast, fieldMap);
-    return queryStr;
+    return astToQueryString(ast, fieldMap);
   }catch(e){
     console.error(e);
     return null;
@@ -284,7 +283,6 @@ function renderResults(data){
 
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// Clear sensitive inputs and response JSON on load/refresh
 window.addEventListener('load', () => {
   tokenInput.value = '';
   queryInput.value = '';
