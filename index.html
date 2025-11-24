@@ -15,7 +15,7 @@
     .grid{display:grid;grid-template-columns:1fr 420px;gap:18px}
     .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.5)}
     label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type=text], textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:14px}
+    input[type=text], textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:14px}
     textarea{min-height:90px;resize:vertical}
     .row{display:flex;gap:10px;align-items:center}
     button{background:var(--accent);color:#082020;border:0;padding:10px 12px;border-radius:8px;font-weight:600;cursor:pointer}
@@ -33,7 +33,7 @@
     <header>
       <div style="flex:1">
         <h1>MuseumData Service — Boolean Search UI (GitHub Pages)</h1>
-        <p class="lead">Paste your token each session (Option A). Enter advanced Boolean queries and translate them to MDS search requests.</p>
+        <p class="lead">Paste your token each session. Enter Boolean queries and get results as JSON.</p>
       </div>
       <div style="text-align:right">
         <div class="muted">Tip: Keep token private — don't commit it to repo</div>
@@ -58,42 +58,24 @@
 
           <div style="height:10px"></div>
 
-          <div class="row">
-            <button id="run">Run search</button>
-            <button id="preview" class="secondary">Preview request</button>
-            <button id="clear" class="secondary">Clear results</button>
-          </div>
-
-          <div style="height:10px"></div>
-
           <label>Field map (friendly→api field). Edit to match your dataset.</label>
           <textarea id="fieldmap" rows="3">collection:collection
 title:title
 description:description
-</textarea>
+          </textarea>
 
           <div style="height:10px"></div>
+
           <label>Page size</label>
           <input id="pageSize" type="text" value="25">
 
-        </div>
+          <div style="height:10px"></div>
 
-        <div style="height:10px"></div>
-
-        <div class="card">
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <div><strong>Generated request</strong> <span class="muted">(URL encoded GET)</span></div>
-            <div class="muted" id="status">Idle</div>
-          </div>
-          <div style="height:8px"></div>
-          <textarea id="requestBody" rows="10"></textarea>
-          <div style="height:8px"></div>
-          <div style="display:flex;gap:8px">
-            <button id="sendRaw">Send raw request</button>
-            <button id="copyJSON" class="secondary">Copy JSON</button>
+          <div class="row">
+            <button id="run">Run search</button>
+            <button id="clear" class="secondary">Clear results</button>
           </div>
         </div>
-
       </div>
 
       <div>
@@ -111,20 +93,6 @@ description:description
             <pre id="responseJSON">{}</pre>
           </div>
         </div>
-
-        <div style="height:10px"></div>
-
-        <div class="card">
-          <strong>Quick help</strong>
-          <ul class="muted">
-            <li>Supported operators: <code>AND</code>, <code>OR</code>, <code>NOT</code> (case-insensitive)</li>
-            <li>Parentheses for grouping: <code>(title:sceatta OR description:sceatta) AND collection:"Wiltshire Museum"</code></li>
-            <li>Fielded terms: <code>collection:"Wiltshire Museum"</code> or <code>collection:Wiltshire</code></li>
-            <li>Phrase search: use double quotes</li>
-            <li>Field map lets you translate friendly names to API names (one per line, colon-separated)</li>
-          </ul>
-        </div>
-
       </div>
     </div>
 
@@ -137,7 +105,7 @@ description:description
 // --- Configuration ---
 const DEFAULT_ENDPOINT = 'https://mds-data.ciim.k-int.com/api/v2/search';
 
-// Field mapping helpers: friendlyName -> apiFieldName
+// Field mapping helpers
 function parseFieldMap(text){
   const lines = text.split('\n').map(s=>s.trim()).filter(Boolean);
   const m = {};
@@ -152,7 +120,7 @@ function parseFieldMap(text){
   return m;
 }
 
-// --- Simple Boolean Parser ---
+// Simple Boolean parser (tokens -> AST -> query string)
 function tokenize(input){
   const tokens = [];
   const re = /\s*(\(|\)|\"(?:[^\\\"]|\\.)*\"|AND\b|OR\b|NOT\b|[^\s()]+)\s*/gi;
@@ -179,7 +147,6 @@ function tokenize(input){
   });
 }
 
-// Parser -> recursive descent
 function parseExpression(tokens){
   let pos=0;
   function peek(){return tokens[pos];}
@@ -219,7 +186,6 @@ function parseExpression(tokens){
   return parseOr();
 }
 
-// Convert AST to query string for GET
 function astToQueryString(ast, fieldMap){
   function nodeToStr(node){
     if(!node) return '';
@@ -231,12 +197,8 @@ function astToQueryString(ast, fieldMap){
         return node.value;
       }
     }
-    if(node.op==='NOT'){
-      return `NOT ${nodeToStr(node.expr)}`;
-    }
-    if(node.op==='AND' || node.op==='OR'){
-      return `(${nodeToStr(node.left)} ${node.op} ${nodeToStr(node.right)})`;
-    }
+    if(node.op==='NOT') return `NOT ${nodeToStr(node.expr)}`;
+    if(node.op==='AND' || node.op==='OR') return `(${nodeToStr(node.left)} ${node.op} ${nodeToStr(node.right)})`;
     return '';
   }
   return nodeToStr(ast);
@@ -247,18 +209,12 @@ const tokenInput = document.getElementById('token');
 const endpointInput = document.getElementById('endpoint');
 const queryInput = document.getElementById('query');
 const fieldmapInput = document.getElementById('fieldmap');
+const pageSizeInput = document.getElementById('pageSize');
 const runBtn = document.getElementById('run');
-const previewBtn = document.getElementById('preview');
-const requestArea = document.getElementById('requestBody');
+const clearBtn = document.getElementById('clear');
 const resultsBox = document.getElementById('results');
 const responseJSON = document.getElementById('responseJSON');
 const statusEl = document.getElementById('status');
-const sendRawBtn = document.getElementById('sendRaw');
-const copyBtn = document.getElementById('copyJSON');
-const clearBtn = document.getElementById('clear');
-const pageSizeInput = document.getElementById('pageSize');
-
-endpointInput.value = DEFAULT_ENDPOINT;
 
 function setStatus(t){ statusEl.textContent = t; }
 
@@ -270,36 +226,24 @@ function parseAndBuild(){
     const tokens = tokenize(raw);
     const ast = parseExpression(tokens);
     const queryStr = astToQueryString(ast, fieldMap);
-    return {ast, queryStr};
+    return queryStr;
   }catch(e){
     console.error(e);
     return null;
   }
 }
 
-previewBtn.addEventListener('click',()=>{
-  const built = parseAndBuild();
-  if(!built){ alert('Unable to parse query'); return; }
-  const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
-  const qs = encodeURIComponent(built.queryStr);
-  const pageSize = parseInt(pageSizeInput.value,10)||25;
-  requestArea.value = `${endpoint}?q=${qs}&page=1&pageSize=${pageSize}`;
-});
-
 runBtn.addEventListener('click', async ()=>{
-  const built = parseAndBuild();
-  if(!built){ alert('Unable to parse query'); return; }
-  await sendRequest(built.queryStr);
+  const queryStr = parseAndBuild();
+  if(!queryStr){ alert('Unable to parse query'); return; }
+  await sendRequest(queryStr);
 });
 
-sendRawBtn.addEventListener('click', async ()=>{
-  let url = requestArea.value.trim();
-  if(!url){ alert('Request URL is empty'); return; }
-  await sendRequestUrl(url);
+clearBtn.addEventListener('click', ()=>{ 
+  resultsBox.innerHTML=''; 
+  responseJSON.textContent='{}'; 
+  setStatus('Cleared'); 
 });
-
-copyBtn.addEventListener('click', ()=>{ navigator.clipboard.writeText(requestArea.value); });
-clearBtn.addEventListener('click', ()=>{ resultsBox.innerHTML=''; responseJSON.textContent='{}'; setStatus('Cleared'); });
 
 async function sendRequest(queryStr){
   const token = tokenInput.value.trim();
@@ -307,16 +251,11 @@ async function sendRequest(queryStr){
   const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
   const pageSize = parseInt(pageSizeInput.value,10)||25;
   const url = `${endpoint}?q=${encodeURIComponent(queryStr)}&page=1&pageSize=${pageSize}`;
-  requestArea.value = url;
-  await sendRequestUrl(url, token);
-}
-
-async function sendRequestUrl(url, token){
   setStatus('Sending...');
   try{
     const res = await fetch(url, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
     responseJSON.textContent = JSON.stringify(data, null, 2);
@@ -338,30 +277,28 @@ function renderResults(data){
     const title = obj.title || obj.name || obj.displayTitle || (obj._id? ('ID: '+obj._id) : 'Untitled');
     const html = document.createElement('div');
     html.className = 'result';
-    html.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${escapeHtml(title)}</strong><div class=\"muted\">${escapeHtml(obj.collection || obj.museum || (obj.collectionTitle||''))}</div></div><div class=\"muted\">${escapeHtml(obj.id || obj.inventoryNumber || obj._id||'')}</div></div><div style=\"height:6px\"></div><div class=\"muted\">${escapeHtml((obj.description||obj.summary||'').slice(0,320))}</div>`;
+    html.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${escapeHtml(title)}</strong><div class="muted">${escapeHtml(obj.collection || obj.museum || (obj.collectionTitle||''))}</div></div><div class="muted">${escapeHtml(obj.id || obj.inventoryNumber || obj._id||'')}</div></div><div style="height:6px"></div><div class="muted">${escapeHtml((obj.description||obj.summary||'').slice(0,320))}</div>`;
     resultsBox.appendChild(html);
   }
 }
 
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// --- Clear sensitive inputs and response JSON on load/refresh ---
+// Clear sensitive inputs and response JSON on load/refresh
 window.addEventListener('load', () => {
   tokenInput.value = '';
   queryInput.value = '';
   resultsBox.innerHTML = '';
-  responseJSON.textContent = '{}';  // clear response JSON
+  responseJSON.textContent = '{}';
 });
 
 window.addEventListener('beforeunload', () => {
   tokenInput.value = '';
   queryInput.value = '';
   resultsBox.innerHTML = '';
-  responseJSON.textContent = '{}';  // clear response JSON
+  responseJSON.textContent = '{}';
 });
 
-// populate request area with empty GET URL
-requestArea.value = `${DEFAULT_ENDPOINT}?q=&page=1&pageSize=25`;
 setStatus('Ready');
 </script>
 </body>
