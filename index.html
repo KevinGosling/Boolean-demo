@@ -175,6 +175,7 @@ function buildFieldQuery(){
   return queries.join(';');
 }
 
+// --- UPDATED previewQuery ---
 async function previewQuery(){
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
