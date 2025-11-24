@@ -49,7 +49,7 @@
           <div style="height:10px"></div>
 
           <label for="endpoint">API endpoint</label>
-          <input id="endpoint" type="text" value="https://mds-data.ciim.k-int.com/api/v2/search" placeholder="POST endpoint for search">
+          <input id="endpoint" type="text" value="https://mds-data.ciim.k-int.com/api/v2/search" placeholder="GET endpoint for search">
 
           <div style="height:10px"></div>
 
@@ -82,7 +82,7 @@ description:description
 
         <div class="card">
           <div class="row" style="justify-content:space-between;align-items:center">
-            <div><strong>Generated request</strong> <span class="muted">(editable JSON)</span></div>
+            <div><strong>Generated request</strong> <span class="muted">(URL encoded GET)</span></div>
             <div class="muted" id="status">Idle</div>
           </div>
           <div style="height:8px"></div>
@@ -219,91 +219,27 @@ function parseExpression(tokens){
   return parseOr();
 }
 
-// Convert AST to MDS-style Elasticsearch-ish query
-function astToQuery(ast, fieldMap){
-  function nodeToClause(node){
-    if(!node) return null;
+// Convert AST to query string for GET
+function astToQueryString(ast, fieldMap){
+  function nodeToStr(node){
+    if(!node) return '';
     if(node.op==='TERM'){
       if(node.field){
         const fld = fieldMap[node.field] || node.field;
-        if(/^[^\s]+$/.test(node.value)){
-          return { term: { [fld]: node.value } };
-        } else {
-          return { match_phrase: { [fld]: node.value } };
-        }
+        return `${fld}:"${node.value}"`;
       } else {
-        return { query_string: { query: node.value } };
+        return node.value;
       }
     }
     if(node.op==='NOT'){
-      const inner = nodeToClause(node.expr);
-      return { not: inner };
+      return `NOT ${nodeToStr(node.expr)}`;
     }
     if(node.op==='AND' || node.op==='OR'){
-      const left = nodeToClause(node.left);
-      const right = nodeToClause(node.right);
-      return { comb: node.op, left, right };
+      return `(${nodeToStr(node.left)} ${node.op} ${nodeToStr(node.right)})`;
     }
-    return null;
+    return '';
   }
-
-  function flatten(node, out){
-    if(!node) return;
-    if(node.comb){
-      if(node.comb==='AND'){
-        flatten(node.left, out);
-        flatten(node.right, out);
-      } else if(node.comb==='OR'){
-        out.should = out.should || [];
-        out.should.push(node.left);
-        out.should.push(node.right);
-      }
-      return;
-    }
-    if(node.not){
-      out.must_not = out.must_not || [];
-      out.must_not.push(node.not);
-      return;
-    }
-    out.must = out.must || [];
-    out.must.push(node);
-  }
-
-  const rootClause = nodeToClause(ast);
-  const holder = {};
-  flatten(rootClause, holder);
-
-  const bool = {};
-  if(holder.must){ bool.must = holder.must.map(convertSimple); }
-  if(holder.should){ bool.should = holder.should.map(convertSimple); bool.minimum_should_match = 1; }
-  if(holder.must_not){ bool.must_not = holder.must_not.map(convertSimple); }
-
-  return { bool };
-
-  function convertSimple(item){
-    if(!item) return null;
-    if(item.term) return { term: item.term };
-    if(item.match_phrase) return { match_phrase: item.match_phrase };
-    if(item.query_string) return { query_string: item.query_string };
-    if(item.comb) return { query_string: { query: serializeNode(item) } };
-    if(item.not) return { query_string: { query: serializeNode(item.not) } };
-    return { query_string: { query: serializeNode(item) } };
-  }
-
-  function serializeNode(n){
-    if(!n) return '';
-    if(n.term){ const [k,v] = Object.entries(n.term)[0]; return `${k}:"+${v}+"`; }
-    if(n.match_phrase){ const [k,v] = Object.entries(n.match_phrase)[0]; return `${k}:\"${v}\"`; }
-    if(n.query_string) return n.query_string.query;
-    if(n.left && n.right && n.comb) return `(${serializeNode(n.left)} ${n.comb} ${serializeNode(n.right)})`;
-    return JSON.stringify(n);
-  }
-}
-
-// Build final POST body for MDS search
-function buildRequestBody(ast, fieldMap, pageSize){
-  const q = astToQuery(ast, fieldMap);
-  return { query: q, page: 1, pageSize: pageSize || 25 };
+  return nodeToStr(ast);
 }
 
 // --- UI wiring ---
@@ -333,8 +269,8 @@ function parseAndBuild(){
   try{
     const tokens = tokenize(raw);
     const ast = parseExpression(tokens);
-    const body = buildRequestBody(ast, fieldMap, parseInt(pageSizeInput.value,10)||25);
-    return {ast,body};
+    const queryStr = astToQueryString(ast, fieldMap);
+    return {ast, queryStr};
   }catch(e){
     console.error(e);
     return null;
@@ -344,35 +280,43 @@ function parseAndBuild(){
 previewBtn.addEventListener('click',()=>{
   const built = parseAndBuild();
   if(!built){ alert('Unable to parse query'); return; }
-  requestArea.value = JSON.stringify(built.body, null, 2);
+  const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
+  const qs = encodeURIComponent(built.queryStr);
+  const pageSize = parseInt(pageSizeInput.value,10)||25;
+  requestArea.value = `${endpoint}?q=${qs}&page=1&pageSize=${pageSize}`;
 });
 
 runBtn.addEventListener('click', async ()=>{
   const built = parseAndBuild();
   if(!built){ alert('Unable to parse query'); return; }
-  requestArea.value = JSON.stringify(built.body, null, 2);
-  await sendRequest(built.body);
+  await sendRequest(built.queryStr);
 });
 
 sendRawBtn.addEventListener('click', async ()=>{
-  let parsed;
-  try{ parsed = JSON.parse(requestArea.value); }catch(e){ alert('Request body is not valid JSON'); return; }
-  await sendRequest(parsed);
+  let url = requestArea.value.trim();
+  if(!url){ alert('Request URL is empty'); return; }
+  await sendRequestUrl(url);
 });
 
 copyBtn.addEventListener('click', ()=>{ navigator.clipboard.writeText(requestArea.value); });
 clearBtn.addEventListener('click', ()=>{ resultsBox.innerHTML=''; responseJSON.textContent='{}'; setStatus('Cleared'); });
 
-async function sendRequest(body){
+async function sendRequest(queryStr){
   const token = tokenInput.value.trim();
   if(!token){ alert('Paste your API token first'); return; }
   const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
+  const pageSize = parseInt(pageSizeInput.value,10)||25;
+  const url = `${endpoint}?q=${encodeURIComponent(queryStr)}&page=1&pageSize=${pageSize}`;
+  requestArea.value = url;
+  await sendRequestUrl(url, token);
+}
+
+async function sendRequestUrl(url, token){
   setStatus('Sending...');
   try{
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(body)
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
     const data = await res.json();
     responseJSON.textContent = JSON.stringify(data, null, 2);
@@ -401,7 +345,6 @@ function renderResults(data){
 
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// --- Clear sensitive inputs on load and refresh, keep responseJSON intact ---
 window.addEventListener('load', () => {
   tokenInput.value = '';
   queryInput.value = '';
@@ -414,8 +357,7 @@ window.addEventListener('beforeunload', () => {
   resultsBox.innerHTML = '';
 });
 
-// populate request body on load with an example
-requestArea.value = JSON.stringify({ query: { match_all: {} }, page:1, pageSize:25 }, null, 2);
+requestArea.value = `${DEFAULT_ENDPOINT}?q=&page=1&pageSize=25`;
 setStatus('Ready');
 </script>
 </body>
