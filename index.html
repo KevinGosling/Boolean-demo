@@ -399,4 +399,24 @@ function renderResults(data){
   }
 }
 
-function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// --- Clear sensitive inputs on load and refresh, keep responseJSON intact ---
+window.addEventListener('load', () => {
+  tokenInput.value = '';
+  queryInput.value = '';
+  resultsBox.innerHTML = '';
+});
+
+window.addEventListener('beforeunload', () => {
+  tokenInput.value = '';
+  queryInput.value = '';
+  resultsBox.innerHTML = '';
+});
+
+// populate request body on load with an example
+requestArea.value = JSON.stringify({ query: { match_all: {} }, page:1, pageSize:25 }, null, 2);
+setStatus('Ready');
+</script>
+</body>
+</html>
