@@ -180,14 +180,18 @@ function buildFieldQuery(){
 async function previewQuery(){
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
+
+  const token = tokenInput.value.trim();
+  if(!token){ alert('Paste your API token first'); return; }
+
   const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
   const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=0`;
+
   requestArea.value = url;
   setStatus('Fetching count...');
 
   try{
-    const token = tokenInput.value.trim();
-    const res = await fetch(url, { headers: token?{'Authorization':`Bearer ${token}`}:{}});
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
     const data = await res.json();
     const total = data.total || (data.hits && data.hits.total) || 0;
     setStatus(`Preview: ${total} matching records`);
