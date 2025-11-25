@@ -1,120 +1,118 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MDS Field query builder — Search API Demo</title>
-  <style>
-    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#6ee7b7;--input-bg:#1e293b;--input-color:#e6eef7;}
-    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
-    body{background:linear-gradient(180deg,#071024 0%,#071a2a 100%);color:#e6eef7;padding:24px;box-sizing:border-box}
-    .container{max-width:1100px;margin:0 auto}
-    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
-    h1{margin:0;font-size:20px}
-    p.lead{margin:0;color:var(--muted);font-size:13px}
-    .grid{display:grid;grid-template-columns:1fr 420px;gap:18px}
-    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.5)}
-    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type=text], textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--input-bg);color:var(--input-color);font-size:14px}
-    textarea{min-height:90px;resize:vertical}
-    .row{display:flex;gap:10px;align-items:center}
-    button{background:var(--accent);color:#082020;border:0;padding:10px 12px;border-radius:8px;font-weight:600;cursor:pointer}
-    button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
-    .results{max-height:520px;overflow:auto;padding:8px;margin-top:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
-    .result{padding:10px;border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,0.02),transparent);margin-bottom:8px}
-    pre{background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;overflow:auto}
-    .muted{color:var(--muted);font-size:13px}
-    footer{margin-top:18px;color:var(--muted);font-size:13px}
-    .field-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
-    .field-row select,input{flex:1;background:var(--input-bg);color:var(--input-color)}
-    @media (max-width:980px){.grid{grid-template-columns:1fr;}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MDS Field query builder — Search API Demo</title>
+<style>
+  :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#6ee7b7;--input-bg:#1e293b;--input-color:#e6eef7;}
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+  body{background:linear-gradient(180deg,#071024 0%,#071a2a 100%);color:#e6eef7;padding:24px;box-sizing:border-box}
+  .container{max-width:1100px;margin:0 auto}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+  h1{margin:0;font-size:20px}
+  p.lead{margin:0;color:var(--muted);font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:18px}
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.5)}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  input[type=text], textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--input-bg);color:var(--input-color);font-size:14px}
+  textarea{min-height:90px;resize:vertical}
+  .row{display:flex;gap:10px;align-items:center}
+  button{background:var(--accent);color:#082020;border:0;padding:10px 12px;border-radius:8px;font-weight:600;cursor:pointer}
+  button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+  .results{max-height:520px;overflow:auto;padding:8px;margin-top:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
+  .result{padding:10px;border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,0.02),transparent);margin-bottom:8px}
+  pre{background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;overflow:auto}
+  .muted{color:var(--muted);font-size:13px}
+  footer{margin-top:18px;color:var(--muted);font-size:13px}
+  .field-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+  .field-row select,input{flex:1;background:var(--input-bg);color:var(--input-color)}
+  @media (max-width:980px){.grid{grid-template-columns:1fr;}}
+</style>
 </head>
 <body>
 <div class="container">
-  <header>
-    <div style="flex:1">
-      <h1>MDS Field query builder - Search API demo (GitHub Pages)</h1>
-      <p class="lead">Build field-specific queries for MDS. Add multiple fields and preview matching record count before running the search.</p>
-    </div>
-    <div style="text-align:right">
-      <div class="muted">Tip: Keep token private — don't commit it to repo</div>
-    </div>
-  </header>
+<header>
+  <div style="flex:1">
+    <h1>MDS Field query builder - Search API demo (GitHub Pages)</h1>
+    <p class="lead">Build field-specific queries for MDS. Add multiple fields and preview matching record count before running the search.</p>
+  </div>
+  <div style="text-align:right">
+    <div class="muted">Tip: Keep token private — don't commit it to repo</div>
+  </div>
+</header>
 
-  <div class="grid">
-    <div>
-      <div class="card">
-        <label for="token">MDS API token (paste each session)</label>
-        <input id="token" type="text" placeholder="paste your token here">
+<div class="grid">
+  <div>
+    <div class="card">
+      <label for="token">MDS API token (paste each session)</label>
+      <input id="token" type="text" placeholder="paste your token here">
+      <div style="height:10px"></div>
 
-        <div style="height:10px"></div>
+      <label for="endpoint">API endpoint</label>
+      <input id="endpoint" type="text" value="https://mds-data.ciim.k-int.com/api/v2/search" placeholder="GET endpoint for search">
 
-        <label for="endpoint">API endpoint</label>
-        <input id="endpoint" type="text" value="https://mds-data.ciim.k-int.com/api/v2/search" placeholder="GET endpoint for search">
+      <div style="height:10px"></div>
+      <label>Field Queries</label>
+      <div id="fieldQueries"></div>
+      <button id="addFieldRow" class="secondary">+ Add field</button>
 
-        <div style="height:10px"></div>
-
-        <label>Field Queries</label>
-        <div id="fieldQueries"></div>
-        <button id="addFieldRow" class="secondary">+ Add field</button>
-
-        <div style="height:10px"></div>
-        <div class="row">
-          <button id="preview">Preview query</button>
-          <button id="run">Run search</button>
-          <button id="clear" class="secondary">Clear results</button>
-        </div>
-
-        <div style="height:10px"></div>
-        <label>Page size</label>
-        <input id="pageSize" type="number" value="25" min="1">
+      <div style="height:10px"></div>
+      <div class="row">
+        <button id="preview">Preview query</button>
+        <button id="run">Run search</button>
+        <button id="clear" class="secondary">Clear results</button>
       </div>
 
       <div style="height:10px"></div>
-
-      <div class="card">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div><strong>Generated request</strong> <span class="muted">(URL encoded GET)</span></div>
-          <div class="muted" id="status">Idle</div>
-        </div>
-        <div style="height:8px"></div>
-        <textarea id="requestBody" rows="6"></textarea>
-        <div style="height:8px"></div>
-      </div>
+      <label>Page size</label>
+      <input id="pageSize" type="number" value="25" min="1">
     </div>
 
-    <div>
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><strong>Results</strong></div>
-          <div class="muted">Preview / debug</div>
-        </div>
+    <div style="height:10px"></div>
 
-        <div class="results" id="results"></div>
-
-        <div style="height:10px"></div>
-        <div>
-          <strong>Response JSON</strong>
-          <pre id="responseJSON">{}</pre>
-        </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div><strong>Generated request</strong> <span class="muted">(URL encoded GET)</span></div>
+        <div class="muted" id="status">Idle</div>
       </div>
-
-      <div style="height:10px"></div>
-
-      <div class="card">
-        <strong>Quick help</strong>
-        <ul class="muted">
-          <li>Add one row per field and enter any search terms you want.</li>
-          <li>Use the operator dropdowns to combine rows and add parentheses.</li>
-        </ul>
-      </div>
+      <div style="height:8px"></div>
+      <textarea id="requestBody" rows="6"></textarea>
+      <div style="height:8px"></div>
     </div>
   </div>
 
-  <footer>
-    <div>To deploy: create a repo, add this file as <code>index.html</code>, enable GitHub Pages (main branch, root), then open the published URL.</div>
-  </footer>
+  <div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>Results</strong></div>
+        <div class="muted">Preview / debug</div>
+      </div>
+
+      <div class="results" id="results"></div>
+
+      <div style="height:10px"></div>
+      <div>
+        <strong>Response JSON</strong>
+        <pre id="responseJSON">{}</pre>
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+
+    <div class="card">
+      <strong>Quick help</strong>
+      <ul class="muted">
+        <li>Add one row per field and enter any search terms you want.</li>
+        <li>Use the operator dropdowns to combine rows and add parentheses.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>To deploy: create a repo, add this file as <code>index.html</code>, enable GitHub Pages (main branch, root), then open the published URL.</div>
+</footer>
 </div>
 
 <script>
@@ -124,7 +122,6 @@ const FIELDS = [
   'object_production_date','material','associated_concept','associated_person','associated_place','associated_date',
   'text','object_history_note','inscription_content','technique','images_potentially_available','credit_line','data_use_licence'
 ];
-// Updated operators
 const OPERATORS_BEFORE = ['AND','OR','AND NOT','OR NOT'];
 const OPERATORS_AFTER = ['(',')'];
 
@@ -145,46 +142,50 @@ endpointInput.value = DEFAULT_ENDPOINT;
 
 function setStatus(t){ statusEl.textContent = t; }
 
-function addFieldRow(field='object_name', query='', isFirst=false){ 
+function addFieldRow(field='object_name', query='', isFirst=false){
   const row = document.createElement('div');
   row.className = 'field-row';
 
-  const operatorBefore = isFirst ? '' : `<select>${OPERATORS_BEFORE.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>`;
-  const operatorAfter = `<select><option value="">(none)</option>${OPERATORS_AFTER.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>`;
+  // Operator before (except first row)
+  const operatorBeforeHTML = isFirst ? '' :
+    `<select>${OPERATORS_BEFORE.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>`;
+
+  // Operator after (always)
+  const operatorAfterHTML = `<select><option value="">(none)</option>${OPERATORS_AFTER.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>`;
 
   row.innerHTML = `
-    ${operatorBefore}
+    ${operatorBeforeHTML}
     <select>${FIELDS.map(f=>`<option value="${f}" ${f===field?'selected':''}>${f}</option>`).join('')}</select>
     <input type="text" placeholder="Enter search terms" value="${query}">
-    ${operatorAfter}
+    ${operatorAfterHTML}
     <button class="secondary">Remove</button>
   `;
 
-  const removeBtn = row.querySelector('button');
-  removeBtn.addEventListener('click', ()=>{ row.remove(); });
+  row.querySelector('button').addEventListener('click', ()=>row.remove());
   fieldQueriesDiv.appendChild(row);
 }
 
 addFieldBtn.addEventListener('click', ()=>addFieldRow('object_name','',false));
 
-function buildFieldQuery() {
+function buildFieldQuery(){
   const rows = fieldQueriesDiv.querySelectorAll('.field-row');
   let parts = [];
 
-  rows.forEach((r, i) => {
+  rows.forEach((r, i)=>{
     const selects = r.querySelectorAll('select');
-    let operatorBefore = i === 0 ? '' : selects[0].value.trim();
-    const field = i === 0 ? selects[0].value.trim() : selects[1].value.trim();
-    let query = r.querySelector('input').value.trim();
-    const operatorAfter = i === 0 ? selects[1].value.trim() : selects[2].value.trim();
+    const operatorBefore = i===0 ? '' : selects[0].value.trim();
+    const field = i===0 ? selects[0].value.trim() : selects[1].value.trim();
+    const query = r.querySelector('input').value.trim();
+    const operatorAfter = i===0 ? selects[1].value.trim() : selects[2].value.trim();
 
-    if (!field || !query) return;
+    if(!field || !query) return;
 
-    if (/\s/.test(query) && !query.startsWith('"')) query = `"${query}"`;
+    let value = query;
+    if(/\s/.test(value) && !value.startsWith('"')) value = `"${value}"`;
 
-    let fragment = `${field}:${query}`;
-    if (operatorBefore) fragment = `${operatorBefore} ${fragment}`;
-    if (operatorAfter) fragment = `${fragment} ${operatorAfter}`;
+    let fragment = `${field}:${value}`;
+    if(operatorBefore) fragment = `${operatorBefore} ${fragment}`;
+    if(operatorAfter) fragment = `${fragment} ${operatorAfter}`;
 
     parts.push(fragment);
   });
@@ -192,7 +193,7 @@ function buildFieldQuery() {
   return parts.join(' ');
 }
 
-// --- Preview and run functions ---
+// --- Preview and run ---
 async function previewQuery(){
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
@@ -205,51 +206,35 @@ async function previewQuery(){
 
   requestArea.value = url;
   setStatus('Fetching count...');
-
   try{
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await fetch(url, { headers:{ 'Authorization':`Bearer ${token}` } });
     const data = await res.json();
     const total = data.total || (data.hits && data.hits.total) || 0;
     setStatus(`Preview: ${total} matching records`);
-  }catch(err){
-    console.error(err);
-    setStatus('Error fetching count');
-  }
+  }catch(err){ console.error(err); setStatus('Error fetching count'); }
 }
 previewBtn.addEventListener('click', previewQuery);
 
 async function runSearch(){
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
-  await sendRequest(fieldQuery);
-}
-runBtn.addEventListener('click', runSearch);
-
-async function sendRequest(fieldQuery){
   const token = tokenInput.value.trim();
-  if(!token){ alert('Paste your API token first'); return; }
   const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
   const pageSize = parseInt(pageSizeInput.value,10)||25;
   const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=${pageSize}`;
   requestArea.value = url;
-  await sendRequestUrl(url, token);
-}
 
-async function sendRequestUrl(url, token){
   setStatus('Sending...');
   try{
-    const res = await fetch(url, { method:'GET', headers: token?{'Authorization':`Bearer ${token}`}:{}});
+    const res = await fetch(url, { method:'GET', headers: token?{'Authorization':`Bearer ${token}`}:{}} );
     const data = await res.json();
     responseJSON.textContent = JSON.stringify(data,null,2);
     renderResults(data);
     const total = data.total || (data.hits && data.hits.total) || (data.items && data.items.length) || 0;
     setStatus(`HTTP ${res.status} — ${total} records returned`);
-  }catch(err){
-    console.error(err);
-    setStatus('Error');
-    alert('Request failed — check console and endpoint/token');
-  }
+  }catch(err){ console.error(err); setStatus('Error'); alert('Request failed — check console and endpoint/token'); }
 }
+runBtn.addEventListener('click', runSearch);
 
 function renderResults(data){
   resultsBox.innerHTML='';
@@ -269,7 +254,6 @@ function renderResults(data){
     resultsBox.appendChild(html);
   });
 }
-
 function escapeHtml(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
 clearBtn.addEventListener('click', ()=>{
@@ -281,7 +265,7 @@ clearBtn.addEventListener('click', ()=>{
 window.addEventListener('load', ()=>{
   tokenInput.value='';
   fieldQueriesDiv.innerHTML='';
-  addFieldRow('object_name','',true); // first row
+  addFieldRow('object_name','',true);
   resultsBox.innerHTML='';
   responseJSON.textContent='{}';
 });
