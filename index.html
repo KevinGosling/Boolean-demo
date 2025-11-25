@@ -156,44 +156,51 @@ function addFieldRow(field='object_name', query='') {
 
 addFieldBtn.addEventListener('click',()=>addFieldRow());
 
-// Transform a single user-friendly Boolean query into API format
-function transformForAPI(userQuery) {
-  if (!userQuery) return '';
+// Transform a single Boolean expression into API syntax
+function transformBooleanForAPI(query) {
+  if (!query) return '';
+  let q = query;
 
-  let q = userQuery;
+  // Replace AND NOT / OR NOT first
+  q = q.replace(/\bAND NOT\b/gi, '-');
+  q = q.replace(/\bOR NOT\b/gi, '-');
 
-  // Replace Boolean operators with API syntax
-  // Note: order matters to avoid partial replacements
-  q = q.replace(/\bAND NOT\b/gi, '-');  // AND NOT → -
-  q = q.replace(/\bOR NOT\b/gi, '-');   // OR NOT → -
-  q = q.replace(/\bAND\b/gi, ' ');      // AND → space
-  q = q.replace(/\bOR\b/gi, '|');       // OR → |
-  q = q.replace(/\bNOT\b/gi, '-');      // NOT → -
-  
-  // Remove multiple spaces
+  // Replace remaining AND, OR, NOT
+  q = q.replace(/\bAND\b/gi, ' ');
+  q = q.replace(/\bOR\b/gi, '|');
+  q = q.replace(/\bNOT\b/gi, '-');
+
+  // Normalize spaces
   q = q.replace(/\s+/g, ' ').trim();
 
   return q;
 }
 
-// Build the field query string for the API
+// Build the API-compliant field query string
 function buildFieldQuery() {
   const rows = Array.from(fieldQueriesDiv.querySelectorAll('.field-row'));
-  const parts = [];
+  const fieldMap = {}; // group queries by field
 
   rows.forEach((r) => {
     const field = r.querySelector('.field').value.trim();
     let value = r.querySelector('input').value.trim();
     if (!field || !value) return;
 
-    // Apply transformation for API format
-    value = transformForAPI(value);
+    value = transformBooleanForAPI(value);
 
-    // Include only the value for this field
-    parts.push(`${field}:${value}`);
+    if (!fieldMap[field]) {
+      fieldMap[field] = [];
+    }
+    fieldMap[field].push(value);
   });
 
-  // Join multiple fields with semicolon as required by API
+  // Construct each field query, grouping multiple rows of same field with parentheses
+  const parts = Object.entries(fieldMap).map(([field, queries]) => {
+    if (queries.length === 1) return `${field}:${queries[0]}`;
+    return `${field}:(${queries.join('|')})`; // OR multiple queries for same field
+  });
+
+  // Separate different fields with semicolons
   return parts.join(';');
 }
 
