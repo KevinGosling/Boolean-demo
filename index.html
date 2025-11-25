@@ -119,6 +119,10 @@ const FIELDS = [
   'text','object_history_note','inscription_content','technique','images_potentially_available','credit_line','data_use_licence'
 ];
 
+const START_OPERATORS_FIRST = ['','('];
+const START_OPERATORS_LATER = ['','AND','OR','AND NOT','OR NOT','('];
+const END_OPERATORS = ['','AND','OR','AND NOT','OR NOT','(',')'];
+
 const tokenInput = document.getElementById('token');
 const endpointInput = document.getElementById('endpoint');
 const fieldQueriesDiv = document.getElementById('fieldQueries');
@@ -136,10 +140,14 @@ function setStatus(t){ statusEl.textContent = t; }
 function addFieldRow(field='object_name', query='') {
   const row = document.createElement('div');
   row.className = 'field-row';
+  const rowCount = fieldQueriesDiv.children.length;
+  const startOps = rowCount === 0 ? START_OPERATORS_FIRST : START_OPERATORS_LATER;
 
   row.innerHTML = `
+    <select class="start-op">${startOps.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>
     <select class="field">${FIELDS.map(f=>`<option value="${f}" ${f===field?'selected':''}>${f}</option>`).join('')}</select>
     <input type="text" placeholder="Enter search terms" value="${query}">
+    <select class="end-op">${END_OPERATORS.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>
     <button class="secondary">Remove</button>
   `;
   row.querySelector('button').addEventListener('click',()=>row.remove());
@@ -148,30 +156,45 @@ function addFieldRow(field='object_name', query='') {
 
 addFieldBtn.addEventListener('click',()=>addFieldRow());
 
-function transformBooleanQuery(userQuery) {
+// Transform a single user-friendly Boolean query into API format
+function transformForAPI(userQuery) {
   if (!userQuery) return '';
+
   let q = userQuery;
-  q = q.replace(/\bAND\b/gi, ' '); // AND → space
-  q = q.replace(/\bOR\b/gi, '|');  // OR → |
-  q = q.replace(/\bNOT\b/gi, '-'); // NOT → -
-  q = q.replace(/\s+/g, ' ').trim(); // normalize spaces
+
+  // Replace Boolean operators with API syntax
+  // Note: order matters to avoid partial replacements
+  q = q.replace(/\bAND NOT\b/gi, '-');  // AND NOT → -
+  q = q.replace(/\bOR NOT\b/gi, '-');   // OR NOT → -
+  q = q.replace(/\bAND\b/gi, ' ');      // AND → space
+  q = q.replace(/\bOR\b/gi, '|');       // OR → |
+  q = q.replace(/\bNOT\b/gi, '-');      // NOT → -
+  
+  // Remove multiple spaces
+  q = q.replace(/\s+/g, ' ').trim();
+
   return q;
 }
 
+// Build the field query string for the API
 function buildFieldQuery() {
   const rows = Array.from(fieldQueriesDiv.querySelectorAll('.field-row'));
   const parts = [];
 
-  rows.forEach(r => {
+  rows.forEach((r) => {
     const field = r.querySelector('.field').value.trim();
     let value = r.querySelector('input').value.trim();
     if (!field || !value) return;
 
-    value = transformBooleanQuery(value);
+    // Apply transformation for API format
+    value = transformForAPI(value);
+
+    // Include only the value for this field
     parts.push(`${field}:${value}`);
   });
 
-  return parts.join(';'); // semicolon-separated field queries
+  // Join multiple fields with semicolon as required by API
+  return parts.join(';');
 }
 
 async function previewQuery(){
