@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MDS Field query builder — Search API Demo</title>
+<title>MDS Field Query Builder</title>
 <style>
 :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#6ee7b7;--input-bg:#1e293b;--input-color:#e6eef7;}
 html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
@@ -25,96 +25,90 @@ button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);
 pre{background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;overflow:auto}
 .muted{color:var(--muted);font-size:13px}
 footer{margin-top:18px;color:var(--muted);font-size:13px}
-.field-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.field-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
 .field-row select,input{flex:1;background:var(--input-bg);color:var(--input-color)}
 @media (max-width:980px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 <div class="container">
-  <header>
-    <div style="flex:1">
-      <h1>MDS Field query builder - Search API demo</h1>
-      <p class="lead">Build field-specific queries for MDS. Add multiple fields and preview matching record count before running the search.</p>
-    </div>
-    <div style="text-align:right">
-      <div class="muted">Tip: Keep token private — don't commit it to repo</div>
-    </div>
-  </header>
+<header>
+  <div style="flex:1">
+    <h1>MDS Field Query Builder</h1>
+    <p class="lead">Build field-specific queries for MDS. Add multiple fields and preview matching record count before running the search.</p>
+  </div>
+  <div style="text-align:right">
+    <div class="muted">Tip: Keep token private — don't commit it to repo</div>
+  </div>
+</header>
 
-  <div class="grid">
-    <div>
-      <div class="card">
-        <label for="token">MDS API token</label>
-        <input id="token" type="text" placeholder="paste your token here">
+<div class="grid">
+  <div>
+    <div class="card">
+      <label for="token">MDS API token</label>
+      <input id="token" type="text" placeholder="paste your token here">
 
-        <div style="height:10px"></div>
+      <div style="height:10px"></div>
+      <label for="endpoint">API endpoint</label>
+      <input id="endpoint" type="text" value="https://mds-data.ciim.k-int.com/api/v2/search">
 
-        <label for="endpoint">API endpoint</label>
-        <input id="endpoint" type="text" value="https://mds-data.ciim.k-int.com/api/v2/search">
+      <div style="height:10px"></div>
+      <label>Field Queries</label>
+      <div id="fieldQueries"></div>
+      <button id="addFieldRow" class="secondary">+ Add field</button>
 
-        <div style="height:10px"></div>
-
-        <label>Field Queries</label>
-        <div id="fieldQueries"></div>
-        <button id="addFieldRow" class="secondary">+ Add field</button>
-
-        <div style="height:10px"></div>
-        <div class="row">
-          <button id="preview">Preview query</button>
-          <button id="run">Run search</button>
-          <button id="clear" class="secondary">Clear results</button>
-        </div>
-
-        <div style="height:10px"></div>
-        <label>Page size</label>
-        <input id="pageSize" type="number" value="25" min="1">
+      <div style="height:10px"></div>
+      <div class="row">
+        <button id="preview">Preview query</button>
+        <button id="run">Run search</button>
+        <button id="clear" class="secondary">Clear results</button>
       </div>
 
       <div style="height:10px"></div>
-
-      <div class="card">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div><strong>Generated request</strong> <span class="muted">(URL encoded GET)</span></div>
-          <div class="muted" id="status">Idle</div>
-        </div>
-        <div style="height:8px"></div>
-        <textarea id="requestBody" rows="6"></textarea>
-      </div>
+      <label>Page size</label>
+      <input id="pageSize" type="number" value="25" min="1">
     </div>
 
-    <div>
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><strong>Results</strong></div>
-          <div class="muted">Preview / debug</div>
-        </div>
-
-        <div class="results" id="results"></div>
-
-        <div style="height:10px"></div>
-        <div>
-          <strong>Response JSON</strong>
-          <pre id="responseJSON">{}</pre>
-        </div>
+    <div style="height:10px"></div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div><strong>Generated request</strong> <span class="muted">(URL encoded GET)</span></div>
+        <div class="muted" id="status">Idle</div>
       </div>
-
-      <div style="height:10px"></div>
-
-      <div class="card">
-        <strong>Quick help</strong>
-        <ul class="muted">
-          <li>Use operators AND, OR, NOT and parentheses in field values.</li>
-          <li>Multiple fields are combined automatically with semicolons.</li>
-          <li>Preview shows total matching records before running full search.</li>
-        </ul>
-      </div>
+      <div style="height:8px"></div>
+      <textarea id="requestBody" rows="6"></textarea>
+      <div style="height:8px"></div>
     </div>
   </div>
 
-  <footer>
-    <div>To deploy: create a repo, add this file as <code>index.html</code>, enable GitHub Pages (main branch, root), then open the published URL.</div>
-  </footer>
+  <div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>Results</strong></div>
+        <div class="muted">Preview / debug</div>
+      </div>
+      <div class="results" id="results"></div>
+      <div style="height:10px"></div>
+      <div>
+        <strong>Response JSON</strong>
+        <pre id="responseJSON">{}</pre>
+      </div>
+    </div>
+
+    <div style="height:10px"></div>
+    <div class="card">
+      <strong>Quick help</strong>
+      <ul class="muted">
+        <li>Add one row per field and enter search terms.</li>
+        <li>Use Boolean operators and parentheses as needed.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>Deploy: add this file as <code>index.html</code> and enable GitHub Pages.</div>
+</footer>
 </div>
 
 <script>
@@ -125,9 +119,9 @@ const FIELDS = [
   'text','object_history_note','inscription_content','technique','images_potentially_available','credit_line','data_use_licence'
 ];
 
-const START_OPERATORS_FIRST = ['', '('];
-const START_OPERATORS_OTHERS = ['','AND','OR','AND NOT','OR NOT','('];
-const END_OPERATORS = ['','AND','OR','AND NOT','OR NOT','('];
+const START_OPERATORS_FIRST = ['','('];
+const START_OPERATORS_LATER = ['','AND','OR','AND NOT','OR NOT','('];
+const END_OPERATORS = ['','AND','OR','AND NOT','OR NOT','(',')'];
 
 const tokenInput = document.getElementById('token');
 const endpointInput = document.getElementById('endpoint');
@@ -139,81 +133,71 @@ const requestArea = document.getElementById('requestBody');
 const resultsBox = document.getElementById('results');
 const responseJSON = document.getElementById('responseJSON');
 const statusEl = document.getElementById('status');
-const clearBtn = document.getElementById('clear');
 const pageSizeInput = document.getElementById('pageSize');
 
-endpointInput.value = DEFAULT_ENDPOINT;
 function setStatus(t){ statusEl.textContent = t; }
 
-function addFieldRow(field='object_name', value='', index=null){
+function addFieldRow(field='object_name', query='') {
   const row = document.createElement('div');
   row.className = 'field-row';
-  const isFirst = (index===0 || fieldQueriesDiv.children.length===0);
-  const startOps = isFirst ? START_OPERATORS_FIRST : START_OPERATORS_OTHERS;
+  const rowCount = fieldQueriesDiv.children.length;
+  const startOps = rowCount === 0 ? START_OPERATORS_FIRST : START_OPERATORS_LATER;
 
   row.innerHTML = `
-    <select class="start-op">${startOps.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>
+    <select class="start-op">${startOps.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>
     <select class="field">${FIELDS.map(f=>`<option value="${f}" ${f===field?'selected':''}>${f}</option>`).join('')}</select>
-    <input type="text" class="value" placeholder="Enter value" value="${value}">
-    <select class="end-op">${END_OPERATORS.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>
-    <button class="secondary remove">Remove</button>
+    <input type="text" placeholder="Enter search terms" value="${query}">
+    <select class="end-op">${END_OPERATORS.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>
+    <button class="secondary">Remove</button>
   `;
-  row.querySelector('.remove').addEventListener('click', ()=>row.remove());
+  row.querySelector('button').addEventListener('click',()=>row.remove());
   fieldQueriesDiv.appendChild(row);
 }
 
-addFieldBtn.addEventListener('click', ()=>addFieldRow());
+addFieldBtn.addEventListener('click',()=>addFieldRow());
 
-function parseValueForAPI(val){
-  val = val.trim();
-  if(!val) return '';
-  // Handle NOT at start
-  if(/^NOT\s+/i.test(val)){
-    const content = val.replace(/^NOT\s+/i,'').trim();
-    return `-(${content})`;
-  }
-  // Handle OR/AND inside value
-  if(/\s+(OR|AND)\s+/i.test(val)){
-    return `(${val})`;
-  }
-  // Otherwise just return
-  return val;
-}
-
-function buildFieldQuery(){
-  const rows = fieldQueriesDiv.querySelectorAll('.field-row');
+function buildFieldQuery() {
+  const rows = Array.from(fieldQueriesDiv.querySelectorAll('.field-row'));
   const parts = [];
+
   rows.forEach((r,i)=>{
     const startOp = r.querySelector('.start-op').value.trim();
     const field = r.querySelector('.field').value.trim();
-    const val = r.querySelector('.value').value.trim();
+    let value = r.querySelector('input').value.trim();
     const endOp = r.querySelector('.end-op').value.trim();
-    if(!field || !val) return;
-    const apiVal = parseValueForAPI(val);
-    let part = `${field}:${apiVal}`;
+
+    if(!field || !value) return;
+    if(/\s/.test(value) && !value.startsWith('"')) value = `"${value}"`;
+
+    let part = `${field}:${value}`;
     if(startOp) part = `${startOp} ${part}`;
-    if(endOp) part = `${part} ${endOp}`;
+
+    const isLast = (i === rows.length - 1);
+    if(endOp && (!isLast || endOp===')')) part = `${part} ${endOp}`;
+
     parts.push(part);
   });
+
   return parts.join(' ');
 }
 
 async function previewQuery(){
-  const fieldQuery = buildFieldQuery();
-  if(!fieldQuery){ alert('Add at least one field query'); return; }
+  const q = buildFieldQuery();
+  if(!q){ alert('Add at least one field query'); return; }
 
   const token = tokenInput.value.trim();
   if(!token){ alert('Paste your API token first'); return; }
 
   const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
-  const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=1`;
+  const url = `${endpoint}?field=${encodeURIComponent(q)}&page=1&pageSize=1`;
 
   requestArea.value = url;
   setStatus('Fetching count...');
+
   try{
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await fetch(url,{headers:{'Authorization':`Bearer ${token}`}});
     const data = await res.json();
-    const total = data.stats && data.stats.total ? data.stats.total : 0;
+    const total = data.stats?.total || (data.hits?.total)||0;
     setStatus(`Preview: ${total} matching records`);
   }catch(err){
     console.error(err);
@@ -221,11 +205,15 @@ async function previewQuery(){
   }
 }
 
+previewBtn.addEventListener('click',previewQuery);
+
 async function runSearch(){
-  const fieldQuery = buildFieldQuery();
-  if(!fieldQuery){ alert('Add at least one field query'); return; }
-  await sendRequest(fieldQuery);
+  const q = buildFieldQuery();
+  if(!q){ alert('Add at least one field query'); return; }
+  await sendRequest(q);
 }
+
+runBtn.addEventListener('click',runSearch);
 
 async function sendRequest(fieldQuery){
   const token = tokenInput.value.trim();
@@ -234,13 +222,17 @@ async function sendRequest(fieldQuery){
   const pageSize = parseInt(pageSizeInput.value,10)||25;
   const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=${pageSize}`;
   requestArea.value = url;
+  await sendRequestUrl(url,token);
+}
+
+async function sendRequestUrl(url,token){
   setStatus('Sending...');
   try{
-    const res = await fetch(url, { method:'GET', headers: token?{'Authorization':`Bearer ${token}`}:{} });
+    const res = await fetch(url,{method:'GET',headers:token?{'Authorization':`Bearer ${token}`}:{}});
     const data = await res.json();
     responseJSON.textContent = JSON.stringify(data,null,2);
     renderResults(data);
-    const total = data.stats && data.stats.total ? data.stats.total : (data.items && data.items.length)||0;
+    const total = data.stats?.total || (data.hits?.total) || (data.items?.length)||0;
     setStatus(`HTTP ${res.status} — ${total} records returned`);
   }catch(err){
     console.error(err);
@@ -251,47 +243,39 @@ async function sendRequest(fieldQuery){
 
 function renderResults(data){
   resultsBox.innerHTML='';
-  const items = data.items || data.results || [];
-  if(items.length===0){ resultsBox.innerHTML='<div class="muted">No results</div>'; return; }
+  const items = data.items || data.results || data.hits?.hits || [];
+  if(!items.length){ resultsBox.innerHTML='<div class="muted">No results</div>'; return; }
   items.forEach(it=>{
-    const obj = it._source || it || {};
-    const title = obj.title || obj.name || obj.displayTitle || (obj._id?('ID:'+obj._id):'Untitled');
+    const obj = it._source||it||{};
+    const title = obj.title||obj.name||obj.displayTitle||('ID:'+(obj._id||''));
     const html = document.createElement('div');
     html.className='result';
     html.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
       <div><strong>${escapeHtml(title)}</strong><div class="muted">${escapeHtml(obj.collection||obj.museum||'')}</div></div>
-      <div class="muted">${escapeHtml(obj.id||obj.inventoryNumber||obj._id||'')}</div>
-      </div>
+      <div class="muted">${escapeHtml(obj.id||obj.inventoryNumber||obj._id||'')}</div></div>
       <div style="height:6px"></div>
       <div class="muted">${escapeHtml((obj.description||obj.summary||'').slice(0,320))}</div>`;
     resultsBox.appendChild(html);
   });
 }
 
-function escapeHtml(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function escapeHtml(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
 
-previewBtn.addEventListener('click', previewQuery);
-runBtn.addEventListener('click', runSearch);
-clearBtn.addEventListener('click', ()=>{
-  resultsBox.innerHTML=''; responseJSON.textContent='{}'; setStatus('Cleared');
+document.getElementById('clear').addEventListener('click',()=>{
+  resultsBox.innerHTML='';
+  responseJSON.textContent='{}';
+  setStatus('Cleared');
 });
 
-window.addEventListener('load', ()=>{
+window.addEventListener('load',()=>{
   tokenInput.value='';
   fieldQueriesDiv.innerHTML='';
   addFieldRow();
   resultsBox.innerHTML='';
   responseJSON.textContent='{}';
+  requestArea.value=`${DEFAULT_ENDPOINT}?field=&page=1&pageSize=25`;
+  setStatus('Ready');
 });
-window.addEventListener('beforeunload', ()=>{
-  tokenInput.value='';
-  fieldQueriesDiv.innerHTML='';
-  resultsBox.innerHTML='';
-  responseJSON.textContent='{}';
-});
-
-requestArea.value=`${DEFAULT_ENDPOINT}?field=&page=1&pageSize=25`;
-setStatus('Ready');
 </script>
 </body>
 </html>
