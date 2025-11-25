@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MDS Field Query Builder — GitHub Pages Demo</title>
+  <title>MDS Field query builder — Search API Demo</title>
   <style>
     :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#6ee7b7;--input-bg:#1e293b;--input-color:#e6eef7;}
     html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
@@ -34,8 +34,8 @@
 <div class="container">
   <header>
     <div style="flex:1">
-      <h1>MuseumData Service — Field Query Builder (GitHub Pages)</h1>
-      <p class="lead">Build field-specific queries for MDS. Add multiple fields and preview matching record count before downloading.</p>
+      <h1>MDS Field query builder - Search API demo (GitHub Pages)</h1>
+      <p class="lead">Build field-specific queries for MDS. Add multiple fields and preview matching record count before running the search.</p>
     </div>
     <div style="text-align:right">
       <div class="muted">Tip: Keep token private — don't commit it to repo</div>
@@ -57,13 +57,13 @@
 
         <label>Field Queries</label>
         <div id="fieldQueries"></div>
-        <button id="addFieldRow" class="secondary">+ Add Field</button>
+        <button id="addFieldRow" class="secondary">+ Add field</button>
 
         <div style="height:10px"></div>
         <div class="row">
-          <button id="preview">Preview Query</button>
-          <button id="run">Run Search</button>
-          <button id="clear" class="secondary">Clear Results</button>
+          <button id="preview">Preview query</button>
+          <button id="run">Run search</button>
+          <button id="clear" class="secondary">Clear results</button>
         </div>
 
         <div style="height:10px"></div>
@@ -81,10 +81,6 @@
         <div style="height:8px"></div>
         <textarea id="requestBody" rows="6"></textarea>
         <div style="height:8px"></div>
-        <div class="row" style="gap:8px">
-          <button id="sendRaw">Send raw request</button>
-          <button id="copyJSON" class="secondary">Copy JSON</button>
-        </div>
       </div>
     </div>
 
@@ -110,7 +106,6 @@
         <strong>Quick help</strong>
         <ul class="muted">
           <li>Add one row per field and enter any search terms you want.</li>
-          <li>Multiple fields are combined with <strong>AND</strong>.</li>
           <li>Each field query can include Boolean operators, phrases, and parentheses.</li>
         </ul>
       </div>
@@ -185,7 +180,7 @@ async function previewQuery(){
   if(!token){ alert('Paste your API token first'); return; }
 
   const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
-  const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=0`;
+  const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=1`;
 
   requestArea.value = url;
   setStatus('Fetching count...');
