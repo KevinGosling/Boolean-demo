@@ -182,7 +182,7 @@ function buildFieldQuery(){
   return parts.join(' ').replace(/\sAND\s/g,';');
 }
 
-async function previewQuery(){
+async function previewQuery() {
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
 
@@ -191,15 +191,18 @@ async function previewQuery(){
 
   const endpoint = endpointInput.value.trim() || DEFAULT_ENDPOINT;
   const url = `${endpoint}?field=${encodeURIComponent(fieldQuery)}&page=1&pageSize=1`;
+
   requestArea.value = url;
   setStatus('Fetching count...');
 
-  try{
+  try {
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
     const data = await res.json();
-    const total = data.total || (data.hits && data.hits.total) || 0;
+
+    // Read total from stats
+    const total = data.stats && data.stats.total ? data.stats.total : 0;
     setStatus(`Preview: ${total} matching records`);
-  }catch(err){
+  } catch(err) {
     console.error(err);
     setStatus('Error fetching count');
   }
