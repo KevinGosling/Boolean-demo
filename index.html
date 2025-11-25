@@ -106,7 +106,7 @@
         <strong>Quick help</strong>
         <ul class="muted">
           <li>Add one row per field and enter any search terms you want.</li>
-          <li>Each field query can include Boolean operators, phrases, and parentheses.</li>
+          <li>Use the operator dropdowns to combine rows and add parentheses.</li>
         </ul>
       </div>
     </div>
@@ -117,7 +117,7 @@
   </footer>
 </div>
 
-  <script>
+<script>
 const DEFAULT_ENDPOINT = 'https://mds-data.ciim.k-int.com/api/v2/search';
 const FIELDS = [
   'pid','collection','description','object_name','object_production_person','object_production_place',
@@ -125,7 +125,8 @@ const FIELDS = [
   'text','object_history_note','inscription_content','technique','images_potentially_available','credit_line','data_use_licence'
 ];
 // Updated operators
-const OPERATORS = ['AND','OR','AND NOT','OR NOT','(',')'];
+const OPERATORS_BEFORE = ['AND','OR','AND NOT','OR NOT'];
+const OPERATORS_AFTER = ['(',')'];
 
 const tokenInput = document.getElementById('token');
 const endpointInput = document.getElementById('endpoint');
@@ -148,15 +149,14 @@ function addFieldRow(field='object_name', query='', isFirst=false){
   const row = document.createElement('div');
   row.className = 'field-row';
 
-  // First row has no operator
-  const operatorSelect = isFirst 
-    ? '' 
-    : `<select>${OPERATORS.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>`;
+  const operatorBefore = isFirst ? '' : `<select>${OPERATORS_BEFORE.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>`;
+  const operatorAfter = `<select><option value="">(none)</option>${OPERATORS_AFTER.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>`;
 
   row.innerHTML = `
-    ${operatorSelect}
+    ${operatorBefore}
     <select>${FIELDS.map(f=>`<option value="${f}" ${f===field?'selected':''}>${f}</option>`).join('')}</select>
     <input type="text" placeholder="Enter search terms" value="${query}">
+    ${operatorAfter}
     <button class="secondary">Remove</button>
   `;
 
@@ -167,35 +167,32 @@ function addFieldRow(field='object_name', query='', isFirst=false){
 
 addFieldBtn.addEventListener('click', ()=>addFieldRow('object_name','',false));
 
-// Build query using operators
 function buildFieldQuery() {
   const rows = fieldQueriesDiv.querySelectorAll('.field-row');
   let parts = [];
 
   rows.forEach((r, i) => {
     const selects = r.querySelectorAll('select');
-    let operator = i === 0 ? '' : selects[0].value.trim();
+    let operatorBefore = i === 0 ? '' : selects[0].value.trim();
     const field = i === 0 ? selects[0].value.trim() : selects[1].value.trim();
-    let query = i === 0 ? r.querySelector('input').value.trim() : r.querySelector('input').value.trim();
+    let query = r.querySelector('input').value.trim();
+    const operatorAfter = i === 0 ? selects[1].value.trim() : selects[2].value.trim();
 
     if (!field || !query) return;
 
-    // Quote values with spaces
     if (/\s/.test(query) && !query.startsWith('"')) query = `"${query}"`;
 
-    const fragment = `${field}:${query}`;
+    let fragment = `${field}:${query}`;
+    if (operatorBefore) fragment = `${operatorBefore} ${fragment}`;
+    if (operatorAfter) fragment = `${fragment} ${operatorAfter}`;
 
-    if (i === 0 || operator === '') {
-      parts.push(fragment);
-    } else {
-      parts.push(`${operator} ${fragment}`);
-    }
+    parts.push(fragment);
   });
 
   return parts.join(' ');
 }
 
-// --- Preview and run functions (unchanged) ---
+// --- Preview and run functions ---
 async function previewQuery(){
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
@@ -284,7 +281,7 @@ clearBtn.addEventListener('click', ()=>{
 window.addEventListener('load', ()=>{
   tokenInput.value='';
   fieldQueriesDiv.innerHTML='';
-  addFieldRow('object_name','',true); // first row, no operator
+  addFieldRow('object_name','',true); // first row
   resultsBox.innerHTML='';
   responseJSON.textContent='{}';
 });
@@ -298,7 +295,5 @@ window.addEventListener('beforeunload', ()=>{
 requestArea.value=`${DEFAULT_ENDPOINT}?field=&page=1&pageSize=25`;
 setStatus('Ready');
 </script>
-
-
 </body>
 </html>
