@@ -117,14 +117,15 @@
   </footer>
 </div>
 
-<script>
+  <script>
 const DEFAULT_ENDPOINT = 'https://mds-data.ciim.k-int.com/api/v2/search';
 const FIELDS = [
   'pid','collection','description','object_name','object_production_person','object_production_place',
   'object_production_date','material','associated_concept','associated_person','associated_place','associated_date',
   'text','object_history_note','inscription_content','technique','images_potentially_available','credit_line','data_use_licence'
 ];
-const OPERATORS = ['AND', 'OR', 'NOT', '(', ')'];
+// Updated operators
+const OPERATORS = ['AND','OR','AND NOT','OR NOT','(',')'];
 
 const tokenInput = document.getElementById('token');
 const endpointInput = document.getElementById('endpoint');
@@ -136,8 +137,6 @@ const requestArea = document.getElementById('requestBody');
 const resultsBox = document.getElementById('results');
 const responseJSON = document.getElementById('responseJSON');
 const statusEl = document.getElementById('status');
-const sendRawBtn = document.getElementById('sendRaw');
-const copyBtn = document.getElementById('copyJSON');
 const clearBtn = document.getElementById('clear');
 const pageSizeInput = document.getElementById('pageSize');
 
@@ -145,60 +144,58 @@ endpointInput.value = DEFAULT_ENDPOINT;
 
 function setStatus(t){ statusEl.textContent = t; }
 
-function addFieldRow(field='object_name', query=''){ 
+function addFieldRow(field='object_name', query='', isFirst=false){ 
   const row = document.createElement('div');
   row.className = 'field-row';
+
+  // First row has no operator
+  const operatorSelect = isFirst 
+    ? '' 
+    : `<select>${OPERATORS.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>`;
+
   row.innerHTML = `
+    ${operatorSelect}
     <select>${FIELDS.map(f=>`<option value="${f}" ${f===field?'selected':''}>${f}</option>`).join('')}</select>
     <input type="text" placeholder="Enter search terms" value="${query}">
-    <select>${OPERATORS.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>
     <button class="secondary">Remove</button>
   `;
+
   const removeBtn = row.querySelector('button');
   removeBtn.addEventListener('click', ()=>{ row.remove(); });
   fieldQueriesDiv.appendChild(row);
 }
 
-addFieldBtn.addEventListener('click', ()=>addFieldRow());
+addFieldBtn.addEventListener('click', ()=>addFieldRow('object_name','',false));
 
+// Build query using operators
 function buildFieldQuery() {
   const rows = fieldQueriesDiv.querySelectorAll('.field-row');
   let parts = [];
 
   rows.forEach((r, i) => {
     const selects = r.querySelectorAll('select');
-    const field = selects[0].value.trim();
-    const op = selects[1].value.trim(); // AND, OR, NOT, (, )
-    let query = r.querySelector('input').value.trim();
+    let operator = i === 0 ? '' : selects[0].value.trim();
+    const field = i === 0 ? selects[0].value.trim() : selects[1].value.trim();
+    let query = i === 0 ? r.querySelector('input').value.trim() : r.querySelector('input').value.trim();
 
     if (!field || !query) return;
 
     // Quote values with spaces
-    if (/\s/.test(query) && !query.startsWith('"')) {
-      query = `"${query}"`;
-    }
+    if (/\s/.test(query) && !query.startsWith('"')) query = `"${query}"`;
 
     const fragment = `${field}:${query}`;
 
-    // First clause: don’t prepend AND/OR
-    if (i === 0) {
-      if (op === '(' || op === 'NOT') {
-        parts.push(`${op} ${fragment}`);
-      } else {
-        parts.push(fragment);
-      }
+    if (i === 0 || operator === '') {
+      parts.push(fragment);
     } else {
-      if (op === '(' || op === ')') {
-        parts.push(`${op} ${fragment}`);
-      } else {
-        parts.push(`${op} ${fragment}`);
-      }
+      parts.push(`${operator} ${fragment}`);
     }
   });
 
   return parts.join(' ');
 }
 
+// --- Preview and run functions (unchanged) ---
 async function previewQuery(){
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
@@ -222,8 +219,8 @@ async function previewQuery(){
     setStatus('Error fetching count');
   }
 }
-
 previewBtn.addEventListener('click', previewQuery);
+
 async function runSearch(){
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
@@ -275,15 +272,9 @@ function renderResults(data){
     resultsBox.appendChild(html);
   });
 }
+
 function escapeHtml(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
-sendRawBtn.addEventListener('click', async ()=>{
-  const url = requestArea.value.trim();
-  if(!url){ alert('Request URL is empty'); return; }
-  const token = tokenInput.value.trim();
-  await sendRequestUrl(url, token);
-});
-copyBtn.addEventListener('click', ()=>navigator.clipboard.writeText(requestArea.value));
 clearBtn.addEventListener('click', ()=>{
   resultsBox.innerHTML='';
   responseJSON.textContent='{}';
@@ -293,7 +284,7 @@ clearBtn.addEventListener('click', ()=>{
 window.addEventListener('load', ()=>{
   tokenInput.value='';
   fieldQueriesDiv.innerHTML='';
-  addFieldRow();
+  addFieldRow('object_name','',true); // first row, no operator
   resultsBox.innerHTML='';
   responseJSON.textContent='{}';
 });
@@ -307,5 +298,7 @@ window.addEventListener('beforeunload', ()=>{
 requestArea.value=`${DEFAULT_ENDPOINT}?field=&page=1&pageSize=25`;
 setStatus('Ready');
 </script>
+
+
 </body>
 </html>
