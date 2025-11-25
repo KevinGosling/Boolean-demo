@@ -57,7 +57,18 @@
 
         <label>Field Queries</label>
         <div id="fieldQueries"></div>
-        <button id="addFieldRow" class="secondary">+ Add field</button>
+        <button id="function addFieldRow(field='object_name', query='', operator='AND'){ 
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  row.innerHTML = `
+    <select>${FIELDS.map(f=>`<option value="${f}" ${f===field?'selected':''}>${f}</option>`).join('')}</select>
+    <input type="text" placeholder="Enter search terms" value="${query}">
+    <select><option value="AND" ${operator==='AND'?'selected':''}>AND</option><option value="OR" ${operator==='OR'?'selected':''}>OR</option><option value="NOT" ${operator==='NOT'?'selected':''}>NOT</option><option value="(" ${operator==='('?'selected':''}>(</option><option value=")" ${operator===')'?'selected':''}>)</option></select>
+    <button class="secondary">Remove</button>
+  `;
+  row.querySelector('button').addEventListener('click', ()=> row.remove());
+  fieldQueriesDiv.appendChild(row);
+}" class="secondary">+ Add field</button>
 
         <div style="height:10px"></div>
         <div class="row">
@@ -124,7 +135,6 @@ const FIELDS = [
   'object_production_date','material','associated_concept','associated_person','associated_place','associated_date',
   'text','object_history_note','inscription_content','technique','images_potentially_available','credit_line','data_use_licence'
 ];
-const OPERATORS = ['AND', 'OR', 'NOT', '(', ')'];
 
 const tokenInput = document.getElementById('token');
 const endpointInput = document.getElementById('endpoint');
@@ -136,8 +146,6 @@ const requestArea = document.getElementById('requestBody');
 const resultsBox = document.getElementById('results');
 const responseJSON = document.getElementById('responseJSON');
 const statusEl = document.getElementById('status');
-const sendRawBtn = document.getElementById('sendRaw');
-const copyBtn = document.getElementById('copyJSON');
 const clearBtn = document.getElementById('clear');
 const pageSizeInput = document.getElementById('pageSize');
 
@@ -151,11 +159,9 @@ function addFieldRow(field='object_name', query=''){
   row.innerHTML = `
     <select>${FIELDS.map(f=>`<option value="${f}" ${f===field?'selected':''}>${f}</option>`).join('')}</select>
     <input type="text" placeholder="Enter search terms" value="${query}">
-    <select>${OPERATORS.map(op=>`<option value="${op}">${op}</option>`).join('')}</select>
     <button class="secondary">Remove</button>
   `;
-  const removeBtn = row.querySelector('button');
-  removeBtn.addEventListener('click', ()=>{ row.remove(); });
+  row.querySelector('button').addEventListener('click', ()=> row.remove());
   fieldQueriesDiv.appendChild(row);
 }
 
@@ -163,13 +169,21 @@ addFieldBtn.addEventListener('click', ()=>addFieldRow());
 
 function buildFieldQuery(){
   const rows = fieldQueriesDiv.querySelectorAll('.field-row');
-  const queries = [];
-  rows.forEach(r=>{
-    const f = r.querySelector('select').value.trim();
-    const q = r.querySelector('input').value.trim();
-    if(f && q) queries.push(`${f}:${q}`);
+  const segments = [];
+  rows.forEach((r, idx)=>{
+    const f = r.querySelectorAll('select')[0].value.trim();
+    const q = r.querySelector('input').value.trim().replace(/;/g,' ');
+    const op = r.querySelectorAll('select')[1].value.trim();
+    if(f && q){
+      const clause = `${f}:${q}`;
+      if(idx === 0){ segments.push(clause); }
+      else{ segments.push(`${op} ${clause}`); }
+    } else if(op === '(' || op === ')'){
+      segments.push(op);
+    }
   });
-  return queries.join(';');
+  return segments.join(' ');
+}(';');
 }
 
 async function previewQuery(){
@@ -187,16 +201,15 @@ async function previewQuery(){
 
   try{
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const total = data.total || (data.hits && data.hits.total) || 0;
     setStatus(`Preview: ${total} matching records`);
-  }catch(err){
-    console.error(err);
-    setStatus('Error fetching count');
-  }
+  }catch(err){ setStatus('Error fetching count'); }
 }
 
 previewBtn.addEventListener('click', previewQuery);
+
 async function runSearch(){
   const fieldQuery = buildFieldQuery();
   if(!fieldQuery){ alert('Add at least one field query'); return; }
@@ -217,17 +230,14 @@ async function sendRequest(fieldQuery){
 async function sendRequestUrl(url, token){
   setStatus('Sending...');
   try{
-    const res = await fetch(url, { method:'GET', headers: token?{'Authorization':`Bearer ${token}`}:{}});
+    const res = await fetch(url, { method:'GET', headers: token?{'Authorization`: Bearer ${token}`}:{} });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     responseJSON.textContent = JSON.stringify(data,null,2);
     renderResults(data);
     const total = data.total || (data.hits && data.hits.total) || (data.items && data.items.length) || 0;
     setStatus(`HTTP ${res.status} — ${total} records returned`);
-  }catch(err){
-    console.error(err);
-    setStatus('Error');
-    alert('Request failed — check console and endpoint/token');
-  }
+  }catch(err){ setStatus('Error'); }
 }
 
 function renderResults(data){
@@ -248,15 +258,9 @@ function renderResults(data){
     resultsBox.appendChild(html);
   });
 }
+
 function escapeHtml(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
-sendRawBtn.addEventListener('click', async ()=>{
-  const url = requestArea.value.trim();
-  if(!url){ alert('Request URL is empty'); return; }
-  const token = tokenInput.value.trim();
-  await sendRequestUrl(url, token);
-});
-copyBtn.addEventListener('click', ()=>navigator.clipboard.writeText(requestArea.value));
 clearBtn.addEventListener('click', ()=>{
   resultsBox.innerHTML='';
   responseJSON.textContent='{}';
@@ -267,12 +271,6 @@ window.addEventListener('load', ()=>{
   tokenInput.value='';
   fieldQueriesDiv.innerHTML='';
   addFieldRow();
-  resultsBox.innerHTML='';
-  responseJSON.textContent='{}';
-});
-window.addEventListener('beforeunload', ()=>{
-  tokenInput.value='';
-  fieldQueriesDiv.innerHTML='';
   resultsBox.innerHTML='';
   responseJSON.textContent='{}';
 });
