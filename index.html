@@ -161,15 +161,38 @@ function addFieldRow(field='object_name', query=''){
 
 addFieldBtn.addEventListener('click', ()=>addFieldRow());
 
-function buildFieldQuery(){
+  function buildFieldQuery() {
   const rows = fieldQueriesDiv.querySelectorAll('.field-row');
-  const queries = [];
-  rows.forEach(r=>{
-    const f = r.querySelector('select').value.trim();
-    const q = r.querySelector('input').value.trim();
-    if(f && q) queries.push(`${f}:${q}`);
+  let parts = [];
+
+  rows.forEach((r, i) => {
+    const selects = r.querySelectorAll('select');
+    const field = selects[0].value.trim();
+    const operator = selects[1].value.trim();  // AND / OR / NOT / ( / )
+    const query = r.querySelector('input').value.trim();
+
+    if (!field || !query) return;
+
+    const fragment = `${field}:${query}`;
+
+    if (i === 0) {
+      // First row: include operator only if it's a "(" or "NOT"
+      if (operator === '(' || operator === 'NOT') {
+        parts.push(`${operator} ${fragment}`);
+      } else {
+        parts.push(fragment);
+      }
+    } else {
+      // Subsequent rows always prepend the operator
+      if (operator === '(' || operator === ')') {
+        parts.push(`${operator} ${fragment}`);
+      } else {
+        parts.push(`${operator} ${fragment}`);
+      }
+    }
   });
-  return queries.join(';');
+
+  return parts.join(' ');
 }
 
 async function previewQuery(){
